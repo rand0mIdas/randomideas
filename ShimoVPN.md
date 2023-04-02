@@ -1,11 +1,11 @@
 # Shimo 5.0.4 - Privilege Escalation 
 
 In the Shimo VPN client in version 5.0.4 on macOS, 
-the com.feingeist.shimo.helper tool LaunchDaemon implements an unprotected XPC service that can be abused to execute scripts as root.
+the com.feingeist.shimo.helper tool implements an unprotected XPC service that can be abused to execute scripts as root.
 
 When a client connects to the service the incomming connection is verified using `processIdentifier` instead of `audit_token`. Such a mechanism is prone to `PID reuse` attack. During this attack it is possible to impersonate a legitimate client and use all methods offered by `ShimoHelperToolProtocol` protocol. 
 
-Vulnerable method: 
+Vulnerable method of ShimoHelperTool Class. As shown below, the verification is based on PID, so it is possible to bypass client restrictions: 
 ```c
 /* @class ShimoHelperTool */
 -(char)listener:(void *)arg2 shouldAcceptNewConnection:(void *)arg3 {
@@ -80,7 +80,9 @@ Vulnerable method:
 
 ```
 
-## Exploit code:
+## Exploit code
+
+Following expoit code was used to connect to the vulnerable helper, impresonate a legitimate client using PID reuse attack and execute a mehod `writeConfig: atPath: withReply:`, which allows for writing an arbitrary file at the disk. The file is created and owned by `root` user :
 ```
 #import <Foundation/Foundation.h>
 #include <spawn.h>
@@ -196,5 +198,6 @@ drwxr-xr-x   5 root  wheel   160 Sep 10  2019 VoiceOver
 
 
 ## Recommendation 
-
+Use the audit token instead of process identifier to create the SecCode references. 
+[Example Resource](https://wojciechregula.blog/post/learn-xpc-exploitation-part-2-say-no-to-the-pid/)
 
