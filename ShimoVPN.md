@@ -83,7 +83,7 @@ Vulnerable method of ShimoHelperTool Class. As shown below, the verification is 
 ## Exploit code
 
 Following expoit code was used to connect to the vulnerable helper, impresonate a legitimate client using PID reuse attack and execute a mehod `writeConfig: atPath: withReply:`, which allows for writing an arbitrary file at the disk. The file is created and owned by `root` user :
-```
+```c
 #import <Foundation/Foundation.h>
 #include <spawn.h>
 #include <signal.h>
