@@ -1,7 +1,7 @@
 # Shimo 5.0.4 - Privilege Escalation 
 
 In the Shimo VPN client in version 5.0.4 on macOS, 
-the com.feingeist.shimo.helper tool implements an unprotected XPC service that can be abused to execute scripts as root.
+the com.feingeist.shimo.helper tool implements an unprotected XPC service that can be abused to create scripts as root on the filesystem, what can lead to privilege escalation. 
 
 When a client connects to the service the incomming connection is verified using `processIdentifier` instead of `audit_token`. Such a mechanism is prone to `PID reuse` attack. During this attack it is possible to impersonate a legitimate client and use all methods offered by `ShimoHelperToolProtocol` protocol. 
 
