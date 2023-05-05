@@ -140,7 +140,7 @@ int main(void) {
          }];
         NSLog(@"obj: %@", obj);
         NSLog(@"conn: %@", _agentConnection);
-        //get FW state
+        //run a custom script
         NSString* sudo_config = @"teststring";
         NSString* sudo_path = @"/Library/Scripts/poc.sh";
         
