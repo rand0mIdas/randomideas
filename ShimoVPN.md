@@ -179,7 +179,7 @@ int main(void) {
 
 
 ## POC
-Once the exploit code is executed a file poc.sh has been created
+Once the exploit code is executed a file poc.sh has been created in the location writable by the root user
 ```
 user@catalina1 exploit % ls -la /Library/Scripts
 total 8
