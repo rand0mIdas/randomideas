@@ -164,7 +164,7 @@ int main(void) {
         printf("forked %d\n", pid);
         pids[i] = pid;
     }
-    // keep the child processes alive
+    
     sleep(10);
     
     cleanup:
